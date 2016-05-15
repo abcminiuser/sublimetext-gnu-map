@@ -1,0 +1,154 @@
+%YAML 1.2
+---
+
+
+# Generic GNU MAP Sublime Text 3 syntax
+# By Dean Camera, dean [at] fourwalledcubicle [dot] com
+
+
+file_extensions:
+  - map
+scope: source.maplisting
+
+variables:
+  # Hex digit, case-insensitive
+  hex_digit: '[0-9a-fA-F]'
+
+  hex_constant: '\b0x{{hex_digit}}+\b'
+
+contexts:
+  #
+  # Main Section
+  #
+  main:
+    - match: '^Archive member included.*$'
+      scope: keyword.gasmap
+      push: archive_section
+
+    - match: '^Allocating common symbols.*$'
+      scope: keyword.gasmap
+      push: common_symbols_section
+
+    - match: '^Discarded input sections.*$'
+      scope: keyword.gasmap
+      push: discarded_input_section
+
+    - match: '^Memory Configuration.*$'
+      scope: keyword.gasmap
+      push: memory_configuration_section
+
+    - match: '^Linker script and memory map.*$'
+      scope: keyword.gasmap
+      push: memory_map_section
+
+    - match: '^Cross Reference Table.*$'
+      scope: keyword.gasmap
+      push: cross_reference_section
+
+  #
+  # Archive Section
+  #
+  archive_section:
+    - meta_scope: archive.section.gasmap
+
+    - include: main
+
+    - match: '^'
+      push: archive_section_filepath
+
+  archive_section_filepath:
+    - meta_scope: string.gasmap
+
+    - match: '\((?!.*\()'
+      push: archive_section_symbolname
+
+    - match: '$'
+      pop: true
+
+  archive_section_symbolname:
+    - meta_scope: entity.name.gasmap
+
+    - match: '\)'
+      pop: true
+
+  #
+  # Common Symbols Section
+  #
+  common_symbols_section:
+    - meta_scope: common-symbols.section.gasmap
+
+    - include: main
+
+    - match: '{{hex_constant}}'
+      scope: constant.numeric.gasmap
+
+  #
+  # Memory Configuration Section
+  #
+  memory_configuration_section:
+    - meta_scope: memory_configuration.section.gasmap
+
+    - include: main
+
+    - include: common_symbols_section
+
+  #
+  # Discarded Input Section
+  #
+  discarded_input_section:
+    - meta_scope: discarded-input.section.gasmap
+
+    - include: main
+
+    - include: memory_map_section
+
+  #
+  # Memory Map Section
+  #
+  memory_map_section:
+    - meta_scope: memory-map.section.gasmap
+
+    - include: main
+
+    - match: 'Address of section.*'
+      scope: comment.gasmap
+
+    - match: '^ *(SORT|LOAD|START GROUP|END GROUP)'
+      scope: keyword
+      push: symbol_entry_details
+
+    - match: '^ *(?!{{hex_constant}})'
+      push: symbol_entry
+
+  symbol_entry:
+    - meta_scope: entity.name.gasmap
+
+    - match: '\('
+      push: symbol_entry_group_details
+
+    - match: ' '
+      push: symbol_entry_details
+
+    - match: '$'
+      pop: true
+
+  symbol_entry_group_details:
+    - match: '\)'
+      pop: true
+
+  symbol_entry_details:
+    - meta_scope: string.gasmap
+
+    - match: '{{hex_constant}}'
+      scope: constant.numeric.gasmap
+
+    - match: '$'
+      pop: true
+
+  #
+  # Cross Reference Section
+  #
+  cross_reference_section:
+    - meta_scope: discarded-input.section.gasmap
+
+    - include: main
